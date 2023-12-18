@@ -1,0 +1,98 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId    BigInt  @id @default(autoincrement())
+  email     String  @unique @db.VarChar(100)
+  password  String  @db.VarChar(255)
+  name      String  @db.VarChar(255)
+  phone     String  @db.VarChar(11)
+  isDeleted Boolean @default(false)
+  google_id String? @db.VarChar(100)
+  naver_id  String? @db.VarChar(100)
+  fcmToken  String? @db.VarChar(255)
+  role      Role    @default(USER)
+
+  reviews          Review[]
+  notifications    Notification[]
+  userReservations UserReservation[]
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model Notification {
+  notiId    BigInt   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String
+  title     String
+  wasRead   Boolean  @default(false)
+
+  User   User?   @relation(fields: [userId], references: [userId])
+  userId BigInt?
+}
+
+model Review {
+  reviewId     BigInt        @id @default(autoincrement())
+  createdAt    DateTime      @default(now())
+  rating       Int           @db.Int
+  reviewImages ReviewImage[]
+
+  User   User?   @relation(fields: [userId], references: [userId])
+  userId BigInt?
+}
+
+model ReviewImage {
+  reviewImageId BigInt @id @default(autoincrement())
+  url           String @db.Text
+
+  Review         Review? @relation(fields: [reviewReviewId], references: [reviewId])
+  reviewReviewId BigInt?
+}
+
+model Reservation {
+  reservationId BigInt   @id @default(autoincrement())
+  date          DateTime
+
+  userReservations UserReservation[]
+  reservationMenus ReservationMenu[]
+}
+
+model Menu {
+  menuId      BigInt  @id @default(autoincrement())
+  image       String?
+  name        String
+  description String?
+
+  reservationMenus ReservationMenu[]
+}
+
+model ReservationMenu {
+  reservationId   BigInt
+  menuId          BigInt
+  specialRequests String? // 사용자의 추가 요구사항
+  reservation     Reservation @relation(fields: [reservationId], references: [reservationId])
+  menu            Menu        @relation(fields: [menuId], references: [menuId])
+
+  @@id([menuId, reservationId])
+}
+
+model UserReservation {
+  userId        BigInt
+  reservationId BigInt
+  user          User        @relation(fields: [userId], references: [userId])
+  reservation   Reservation @relation(fields: [reservationId], references: [reservationId])
+
+  @@id([userId, reservationId])
+}
